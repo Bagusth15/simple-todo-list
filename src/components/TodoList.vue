@@ -12,34 +12,24 @@
       enter-active-class="animated fadeInUp"
       leave-active-class="animated fadeOutDown"
     >
-      <div v-for="(todo, index) in todosFiltered" :key="todo.id" class="todo-item">
-        <div class="todo-item-left">
-          <input type="checkbox" v-model="todo.completed" />
-          <div
-            v-if="!todo.editing"
-            @dblclick="editTodo(todo)"
-            class="todo-item-label"
-            :class="{ completed: todo.completed }"
-          >{{ todo.title }}</div>
-          <input
-            v-else
-            class="todo-item-edit"
-            type="text"
-            v-model="todo.title"
-            @blur="doneEdit(todo)"
-            @keyup.enter="doneEdit(todo)"
-            @keyup.esc="cancelEdit(todo)"
-            v-focus
-          />
-        </div>
-        <div class="remove-item" @click="removeTodo(index)">&times;</div>
-      </div>
+      <todo-item
+        v-for="todo in todosFiltered"
+        :key="todo.id"
+        :todo="todo"
+        :checkAll="!anyRemaining"
+        @removedTodo="removeTodo"
+        @finishedEdit="finishedEdit"
+      ></todo-item>
     </transition-group>
 
     <div class="extra-container">
       <div>
         <label>
-          <input type="checkbox" :checked="!anyRemaining" @change="checkAllTodos" />
+          <input
+            type="checkbox"
+            :checked="!anyRemaining"
+            @change="checkAllTodos"
+          />
           Check All
         </label>
       </div>
@@ -47,13 +37,27 @@
     </div>
     <div class="extra-container">
       <div>
-        <button :class="{ active: filter == 'all' }" @click="filter = 'all'">All</button>
-        <button :class="{ active: filter == 'active' }" @click="filter = 'active'">Active</button>
-        <button :class="{ active: filter == 'completed' }" @click="filter = 'completed'">Completed</button>
+        <button :class="{ active: filter == 'all' }" @click="filter = 'all'">
+          All
+        </button>
+        <button
+          :class="{ active: filter == 'active' }"
+          @click="filter = 'active'"
+        >
+          Active
+        </button>
+        <button
+          :class="{ active: filter == 'completed' }"
+          @click="filter = 'completed'"
+        >
+          Completed
+        </button>
       </div>
       <div>
         <transition name="fade">
-          <button v-if="showClearCompletedButton" @click="clearCompleted">Clear Completed</button>
+          <button v-if="showClearCompletedButton" @click="clearCompleted">
+            Clear Completed
+          </button>
         </transition>
       </div>
     </div>
@@ -61,8 +65,12 @@
 </template>
 
 <script>
+import TodoItem from "./TodoItem";
 export default {
   name: "todo-list",
+  components: {
+    TodoItem
+  },
   data() {
     return {
       newTodo: "",
@@ -106,13 +114,7 @@ export default {
       return this.todos.filter(todo => todo.completed).length > 0;
     }
   },
-  directives: {
-    focus: {
-      inserted: function(el) {
-        el.focus();
-      }
-    }
-  },
+
   methods: {
     addTodo() {
       if (this.newTodo.trim().length == 0) {
@@ -126,21 +128,8 @@ export default {
       this.newTodo = "";
       this.idForTodo++;
     },
-    editTodo(todo) {
-      this.beforeEditCache = todo.title;
-      todo.editing = true;
-    },
-    doneEdit(todo) {
-      if (todo.title.trim().length == 0) {
-        todo.title = this.beforeEditCache;
-      }
-      todo.editing = false;
-    },
-    cancelEdit(todo) {
-      todo.title = this.beforeEditCache;
-      todo.editing = false;
-    },
-    removeTodo(index) {
+    removeTodo(id) {
+      const index = this.todos.findIndex(item => item.id == id);
       this.todos.splice(index, 1);
     },
     checkAllTodos() {
@@ -148,20 +137,23 @@ export default {
     },
     clearCompleted() {
       this.todos = this.todos.filter(todo => !todo.completed);
+    },
+    finishedEdit(data) {
+      const index = this.todos.findIndex(item => item.id == data.id);
+      this.todos.splice(index, 1, data);
     }
   }
 };
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
-<style scoped lang="scss">
+<style lang="scss">
 @import url("https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.5.2/animate.min.css");
 .todo-input {
   width: 100%;
   padding: 10px 18px;
   font-size: 18px;
   margin-bottom: 16px;
-
   &:focus {
     outline: 0;
   }
@@ -181,6 +173,7 @@ export default {
   }
 }
 .todo-item-left {
+  // later
   display: flex;
   align-items: center;
 }
@@ -195,9 +188,8 @@ export default {
   margin-left: 12px;
   width: 100%;
   padding: 10px;
-  border: 1px solid #ccc;
-  font-family: "Avenir", Arial, Helvetica, sans-serif;
-
+  border: 1px solid #ccc; //override defaults
+  font-family: "Avenir", Helvetica, Arial, sans-serif;
   &:focus {
     outline: none;
   }
@@ -213,18 +205,15 @@ export default {
   font-size: 16px;
   border-top: 1px solid lightgrey;
   padding-top: 14px;
-  margin-top: 14px;
   margin-bottom: 14px;
 }
 button {
   font-size: 14px;
   background-color: white;
   appearance: none;
-
   &:hover {
     background: lightgreen;
   }
-
   &:focus {
     outline: none;
   }
@@ -232,6 +221,7 @@ button {
 .active {
   background: lightgreen;
 }
+// CSS Transitions
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.2s;
