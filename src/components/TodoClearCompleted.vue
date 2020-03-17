@@ -5,15 +5,16 @@
 </template>
 
 <script>
-import { eventBus } from "@/eventBus.js";
 export default {
   name: "todo-clear-completed",
-  props: {
-    showClearCompletedButton: {}
+  computed: {
+    showClearCompletedButton() {
+      return this.$store.getters.showClearCompletedButton;
+    }
   },
   methods: {
     clearCompleted() {
-      eventBus.$emit("clearCompletedTodos");
+      this.$store.dispatch("clearCompleted");
     }
   }
 };
