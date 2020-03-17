@@ -17,47 +17,20 @@
         :key="todo.id"
         :todo="todo"
         :checkAll="!anyRemaining"
-        @removedTodo="removeTodo"
-        @finishedEdit="finishedEdit"
       ></todo-item>
     </transition-group>
 
     <div class="extra-container">
-      <div>
-        <label>
-          <input
-            type="checkbox"
-            :checked="!anyRemaining"
-            @change="checkAllTodos"
-          />
-          Check All
-        </label>
-      </div>
-      <div>{{ remaining }} items left</div>
+      <todo-check-all :anyRemaining="anyRemaining"></todo-check-all>
+      <todo-items-remaining :remaining="remaining"></todo-items-remaining>
     </div>
     <div class="extra-container">
-      <div>
-        <button :class="{ active: filter == 'all' }" @click="filter = 'all'">
-          All
-        </button>
-        <button
-          :class="{ active: filter == 'active' }"
-          @click="filter = 'active'"
-        >
-          Active
-        </button>
-        <button
-          :class="{ active: filter == 'completed' }"
-          @click="filter = 'completed'"
-        >
-          Completed
-        </button>
-      </div>
+      <todo-filtered></todo-filtered>
       <div>
         <transition name="fade">
-          <button v-if="showClearCompletedButton" @click="clearCompleted">
-            Clear Completed
-          </button>
+          <todo-clear-completed
+            :showClearCompletedButton="showClearCompletedButton"
+          ></todo-clear-completed>
         </transition>
       </div>
     </div>
@@ -66,10 +39,20 @@
 
 <script>
 import TodoItem from "./TodoItem";
+import TodoItemsRemaining from "./TodoItemsRemaining";
+import TodoCheckAll from "./TodoCheckAll";
+import TodoFiltered from "./TodoFiltered";
+import TodoClearCompleted from "./TodoClearCompleted";
+import { eventBus } from "@/eventBus.js";
+
 export default {
   name: "todo-list",
   components: {
-    TodoItem
+    TodoItem,
+    TodoItemsRemaining,
+    TodoCheckAll,
+    TodoFiltered,
+    TodoClearCompleted
   },
   data() {
     return {
@@ -92,6 +75,20 @@ export default {
         }
       ]
     };
+  },
+  created() {
+    eventBus.$on("removedTodo", id => this.removeTodo(id));
+    eventBus.$on("finishedEdit", data => this.finishedEdit(data));
+    eventBus.$on("checkAllChanged", checked => this.checkAllTodos(checked));
+    eventBus.$on("filterChanged", filter => (this.filter = filter));
+    eventBus.$on("clearCompletedTodos", () => this.clearCompleted());
+  },
+  beforeDestroy() {
+    eventBus.$off("removedTodo", id => this.removeTodo(id));
+    eventBus.$off("finishedEdit", data => this.finishedEdit(data));
+    eventBus.$off("checkAllChanged", checked => this.checkAllTodos(checked));
+    eventBus.$off("filterChanged", filter => (this.filter = filter));
+    eventBus.$off("clearCompletedTodos", () => this.clearCompleted());
   },
   computed: {
     remaining() {
